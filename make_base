@@ -27,18 +27,23 @@ rwildcard=$(wildcard $1/$2) $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)
 
 # SETUP #
 
+EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
+
 OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
-			$(patsubst %.c,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
-			$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
-			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
 			$(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
 			$(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
 			$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
+			$(patsubst %.c,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
+			$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
+			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
 		)
 
 OUTPUT_ZIP_FILE := $(OUTPUT_DIR)/$(NAME).zip
 ifeq ($(LIBRARY),1)
-	OUTPUT_FILES := $(OUTPUT_DIR)/lib$(NAME).a $(OUTPUT_DIR)/lib$(NAME).so
+	OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(NAME).a
+	ifneq ($(TARGET),3DS)
+		$(OUTPUT_DIR)/lib/lib$(NAME).so
+	endif
 else ifeq ($(TARGET),3DS)
 	OUTPUT_FILES := $(OUTPUT_DIR)/$(NAME).elf $(OUTPUT_DIR)/3ds/$(NAME)/$(NAME).smdh $(OUTPUT_DIR)/3ds/$(NAME)/$(NAME).3dsx $(OUTPUT_DIR)/$(NAME).3ds $(OUTPUT_DIR)/$(NAME).cia
 else
@@ -58,14 +63,12 @@ else
 endif
 
 LD_FLAGS := $(patsubst %,-L%/lib,$(LIBRARY_DIRS)) $(patsubst %,-l%,$(LIBRARIES))
-COMMON_CC_FLAGS := $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall -O2 $(BUILD_FLAGS)
-ifeq ($(LIBRARY),1)
-	COMMON_CC_FLAGS += -fPIC
-endif
-
+COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(BUILD_DIR)/%,$(dir $(call rwildcard,$(dir),*))))) $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall -O2 $(BUILD_FLAGS)
 ifeq ($(TARGET),3DS)
 	COMMON_CC_FLAGS += -mword-relocations -fomit-frame-pointer -ffast-math -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -DARM11 -D_3DS
 	LD_FLAGS += -specs=3dsx.specs
+else ifeq ($(LIBRARY),1)
+	COMMON_CC_FLAGS += -fPIC
 endif
 
 CC_FLAGS := $(COMMON_CC_FLAGS) -std=gnu99
@@ -93,21 +96,25 @@ ifeq ($(TARGET),3DS)
 
 	COMMON_MAKEROM_PARAMS := -rsf $(RSF) -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -DAPP_TITLE="$(NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" $(ROMFS_PARAM) -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)"
 
+	BIN2S := $(DEVKITARM)/bin/bin2s
 	SMDHTOOL := $(DEVKITARM)/bin/smdhtool
 	_3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
 
 	ifeq ($(OS),Windows_NT)
 		MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom.exe
 		BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool.exe
+		CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra.exe
 	else
 		UNAME_S := $(shell uname -s)
 		ifeq ($(UNAME_S),Linux)
 			MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux
 			BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux
+			CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux
 		endif
 		ifeq ($(UNAME_S),Darwin)
 			MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac
 			BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac
+			CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac
 		endif
 	endif
 
@@ -119,14 +126,37 @@ endif
 
 # RULES #
 
-.PHONY: all run clean
+.PHONY: all run install clean
 .PRECIOUS: %.bnr %.icn
 
 all: $(OUTPUT_ZIP_FILE)
 
-ifneq ($(LIBRARY),1)
+ifeq ($(LIBRARY),1)
+ifeq ($(TARGET),3DS)
+install: $(OUTPUT_ZIP_FILE)
+	@mkdir -p $(DEVKITPRO)/$(NAME)
+	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(NAME) > /dev/null
+	@echo "Installed."
+else
+install: $(OUTPUT_FILES)
+	@install -m 0755 $(OUTPUT_FILES) /usr/local/lib
+	@install -m 0755 $(foreach dir,$(INCLUDE_DIRS),$(wildcard $(dir)/*)) /usr/local/include
+	@echo "Installed."
+endif
+else
+ifeq ($(TARGET),3DS)
 run: $(OUTPUT_FILES)
-	./$< $(RUN_FLAGS)
+	@echo "Running..."
+	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/$(NAME).elf
+else
+run: $(OUTPUT_FILES)
+	@echo "Running..."
+	@./$< $(RUN_FLAGS)
+
+install: $(OUTPUT_FILES)
+	@install -m 0755 $(OUTPUT_FILES) /usr/local/bin
+	@echo "Installed."
+endif
 endif
 
 clean:
@@ -136,8 +166,9 @@ clean:
 $(foreach file,$(OBJECT_FILES),$(eval $(call createdirrule,$(file))))
 $(foreach file,$(OUTPUT_FILES),$(eval $(call createdirrule,$(file))))
 
-$(OUTPUT_ZIP_FILE): $(OUTPUT_FILES)
+$(OUTPUT_ZIP_FILE): $(OUTPUT_FILES) $(EXTRA_OUTPUT_FILES)
 	@echo $@
+	@cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
 	@cd $(OUTPUT_DIR); \
 	zip -r $(patsubst $(OUTPUT_DIR)/%,%,$@ $^) > /dev/null
 
@@ -175,10 +206,10 @@ $(BUILD_DIR)/%.o: %.S
 
 ifeq ($(TARGET),3DS)
 define bin2o
-	bin2s $< | $(AS) -o $(@)
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(<F) | tr . _)`.h
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(<F) | tr . _)`.h
-	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(<F) | tr . _)`.h
+	$(BIN2S) $< | $(AS) -o $(@)
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(BUILD_DIR)/$< | tr . _)`.h
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
+	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
 endef
 
 $(BUILD_DIR)/%.bin.o: %.bin
@@ -186,23 +217,23 @@ $(BUILD_DIR)/%.bin.o: %.bin
 	@$(bin2o)
 
 define shader-as
-	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$(notdir $@)))
+	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$@))
 	picasso -o $(CURBIN) $1
-	bin2s $(CURBIN) | $(AS) -o $@
-	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURBIN) | tr . _)`.h
-	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
-	echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURBIN) | tr . _)`.h
+	$(BIN2S) $(CURBIN) | $(AS) -o $@
+	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURBIN) | tr . _)`.h
+	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
+	echo "extern const u32" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURBIN) | tr . _)`.h
 endef
 
-$(BUILD_DIR)/%.shbin.o : %.v.pica %.g.pica
+$(BUILD_DIR)/%.shbin.o: %.v.pica %.g.pica
 	@echo $@
 	@$(call shader-as,$^)
 
-$(BUILD_DIR)/%.shbin.o : %.v.pica
+$(BUILD_DIR)/%.shbin.o: %.v.pica
 	@echo $@
 	@$(call shader-as,$<)
 
-$(BUILD_DIR)/%.shbin.o : %.shlist
+$(BUILD_DIR)/%.shbin.o: %.shlist
 	@echo $@
 	@$(call shader-as,$(foreach file,$(shell cat $<),$(dir $<)/$(file)))
 
