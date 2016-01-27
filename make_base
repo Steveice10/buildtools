@@ -27,6 +27,9 @@ rwildcard=$(wildcard $1/$2) $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)
 
 # SETUP #
 
+EMPTY :=
+SPACE := $(EMPTY) $(EMPTY)
+STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
 EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
 
 OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
@@ -38,16 +41,16 @@ OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
 			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
 		)
 
-OUTPUT_ZIP_FILE := $(OUTPUT_DIR)/$(NAME).zip
+OUTPUT_ZIP_FILE := $(OUTPUT_DIR)/$(STRIPPED_NAME).zip
 ifeq ($(LIBRARY),1)
-	OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(NAME).a
+	OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a
 	ifneq ($(TARGET),3DS)
-		$(OUTPUT_DIR)/lib/lib$(NAME).so
+		$(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).so
 	endif
 else ifeq ($(TARGET),3DS)
-	OUTPUT_FILES := $(OUTPUT_DIR)/$(NAME).elf $(OUTPUT_DIR)/3ds/$(NAME)/$(NAME).smdh $(OUTPUT_DIR)/3ds/$(NAME)/$(NAME).3dsx $(OUTPUT_DIR)/$(NAME).3ds $(OUTPUT_DIR)/$(NAME).cia
+	OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).smdh $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
 else
-	OUTPUT_FILES := $(OUTPUT_DIR)/$(NAME)
+	OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
 endif
 
 ifeq ($(TARGET),3DS)
@@ -134,8 +137,8 @@ all: $(OUTPUT_ZIP_FILE)
 ifeq ($(LIBRARY),1)
 ifeq ($(TARGET),3DS)
 install: $(OUTPUT_ZIP_FILE)
-	@mkdir -p $(DEVKITPRO)/$(NAME)
-	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(NAME) > /dev/null
+	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
+	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(STRIPPED_NAME) > /dev/null
 	@echo "Installed."
 else
 install: $(OUTPUT_FILES)
@@ -147,7 +150,7 @@ else
 ifeq ($(TARGET),3DS)
 run: $(OUTPUT_FILES)
 	@echo "Running..."
-	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/$(NAME).elf
+	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/$(STRIPPED_NAME).elf
 else
 run: $(OUTPUT_FILES)
 	@echo "Running..."
@@ -172,7 +175,7 @@ $(OUTPUT_ZIP_FILE): $(OUTPUT_FILES) $(EXTRA_OUTPUT_FILES)
 	@cd $(OUTPUT_DIR); \
 	zip -r $(patsubst $(OUTPUT_DIR)/%,%,$@ $^) > /dev/null
 
-$(OUTPUT_DIR)/$(NAME): $(OBJECT_FILES)
+$(OUTPUT_DIR)/$(STRIPPED_NAME): $(OBJECT_FILES)
 	@echo $@
 	@$(CXX) $(CXX_FLAGS) $^ -o $@ $(LD_FLAGS)
 
@@ -249,7 +252,7 @@ $(BUILD_DIR)/%.shbin.o: %.shlist
 	@echo $@
 	@$(SMDHTOOL) --create "$(NAME)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
 
-$(OUTPUT_DIR)/3ds/$(NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(OUTPUT_DIR)/3ds/$(NAME)/%.smdh
+$(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.smdh
 	@echo $@
 	@$(_3DSXTOOL) $< $@ --smdh=$(word 2,$^) $(_3DSXFLAGS)
 
