@@ -130,6 +130,10 @@ ifeq ($(TARGET),3DS)
 	endif
 endif
 
+ifneq ($(EXTRA_OUTPUT_FILES),)
+	EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
+endif
+
 # RULES #
 
 .PHONY: all run install clean
@@ -174,7 +178,7 @@ $(foreach file,$(OUTPUT_FILES),$(eval $(call createdirrule,$(file))))
 
 $(OUTPUT_ZIP_FILE): $(OUTPUT_FILES) $(EXTRA_OUTPUT_FILES)
 	@echo $@
-	@cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
+	@$(EXTRA_OUTPUT_COPY_CMD)
 	@cd $(OUTPUT_DIR); \
 	zip -r $(patsubst $(OUTPUT_DIR)/%,%,$@ $^) > /dev/null
 
