@@ -30,7 +30,10 @@ rwildcard=$(wildcard $1/$2) $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2)
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
-EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
+
+ifeq ($(LIBRARY),1)
+	EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
+endif
 
 OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
 			$(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
@@ -136,27 +139,27 @@ all: $(OUTPUT_ZIP_FILE)
 
 ifeq ($(LIBRARY),1)
 ifeq ($(TARGET),3DS)
-install: $(OUTPUT_ZIP_FILE)
+install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
 	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(STRIPPED_NAME) > /dev/null
 	@echo "Installed."
 else
-install: $(OUTPUT_FILES)
+install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/lib
 	@install -m 0755 $(foreach dir,$(INCLUDE_DIRS),$(wildcard $(dir)/*)) /usr/local/include
 	@echo "Installed."
 endif
 else
 ifeq ($(TARGET),3DS)
-run: $(OUTPUT_FILES)
+run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
 	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/$(STRIPPED_NAME).elf
 else
-run: $(OUTPUT_FILES)
+run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
 	@./$< $(RUN_FLAGS)
 
-install: $(OUTPUT_FILES)
+install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/bin
 	@echo "Installed."
 endif
