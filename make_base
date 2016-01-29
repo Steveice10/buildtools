@@ -31,6 +31,8 @@ EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
 
+REMOTE_IP ?= 127.0.0.1 # User-defined
+
 ifeq ($(LIBRARY),1)
 	EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
 endif
@@ -105,6 +107,7 @@ ifeq ($(TARGET),3DS)
 	BIN2S := $(DEVKITARM)/bin/bin2s
 	SMDHTOOL := $(DEVKITARM)/bin/smdhtool
 	_3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
+	_3DSLINK := $(DEVKITARM)/bin/3dslink
 
 	ifeq ($(OS),Windows_NT)
 		MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom.exe
@@ -158,6 +161,10 @@ ifeq ($(TARGET),3DS)
 run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
 	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/$(STRIPPED_NAME).elf
+
+runhw: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@$(_3DSLINK) --address $(REMOTE_IP) $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
 else
 run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
