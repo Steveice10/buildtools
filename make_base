@@ -31,6 +31,10 @@ EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
 
+ifeq ($(strip $(TITLE)),)
+	TITLE := $(NAME)
+endif
+
 REMOTE_IP ?= 127.0.0.1 # User-defined
 
 ifeq ($(LIBRARY),1)
@@ -102,7 +106,7 @@ ifeq ($(TARGET),3DS)
 		ROMFS_PARAM := -DAPP_ROMFS="RootPath: $(ROMFS_DIR)"
 	endif
 
-	COMMON_MAKEROM_PARAMS := -rsf $(RSF) -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -DAPP_TITLE="$(NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" $(ROMFS_PARAM) -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)"
+	COMMON_MAKEROM_PARAMS := -rsf $(RSF) -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -DAPP_TITLE="$(TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" $(ROMFS_PARAM) -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)"
 
 	BIN2S := $(DEVKITARM)/bin/bin2s
 	SMDHTOOL := $(DEVKITARM)/bin/smdhtool
@@ -260,11 +264,11 @@ $(BUILD_DIR)/%.shbin.o: %.shlist
 
 %.icn: $(ICON)
 	@echo $@
-	@$(BANNERTOOL) makesmdh -s "$(NAME)" -l "$(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) -o $@ > /dev/null
+	@$(BANNERTOOL) makesmdh -s "$(TITLE)" -l "$(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) -o $@ > /dev/null
 
 %.smdh: $(ICON)
 	@echo $@
-	@$(SMDHTOOL) --create "$(NAME)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
+	@$(SMDHTOOL) --create "$(TITLE)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
 
 $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.smdh
 	@echo $@
