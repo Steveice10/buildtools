@@ -103,7 +103,7 @@ ifeq ($(TARGET),3DS)
 	COMMON_MAKEROM_FLAGS := -rsf $(BUILDTOOLS_DIR)/3ds/template.rsf -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -DAPP_TITLE="$(TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)"
 
 	ifneq ("$(wildcard $(ROMFS_DIR))","")
-		_3DSXFLAGS += --romfs=$(ROMFS_DIR)
+		_3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
 		COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="RootPath: $(ROMFS_DIR)"
 	endif
 
