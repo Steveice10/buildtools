@@ -113,7 +113,7 @@ ifeq ($(TARGET),3DS)
 		BANNER_IMAGE_ARG := -i
 	endif
 
-	ifeq ($(suffix $(BANNER_AUDIO)),".cwav")
+	ifeq ($(suffix $(BANNER_AUDIO)),.cwav)
 		BANNER_AUDIO_ARG := -ca
 	else
 		BANNER_AUDIO_ARG := -a
