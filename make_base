@@ -107,7 +107,7 @@ ifeq ($(TARGET),3DS)
 		COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="RootPath: $(ROMFS_DIR)"
 	endif
 
-	ifeq ($(suffix $(BANNER_IMAGE)),".cgfx")
+	ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
 		BANNER_IMAGE_ARG := -ci
 	else
 		BANNER_IMAGE_ARG := -i
