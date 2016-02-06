@@ -205,7 +205,7 @@ $(BUILD_DIR)/%.shbin.o: %.shlist
 
 %.icn: $(ICON)
 	@echo $@
-	@$(BANNERTOOL) makesmdh -s "$(TITLE)" -l "$(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) -o $@ > /dev/null
+	@$(BANNERTOOL) makesmdh -s "$(TITLE)" -l "$(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) $(ICON_FLAGS) -o $@ > /dev/null
 
 %.smdh: $(ICON)
 	@echo $@
