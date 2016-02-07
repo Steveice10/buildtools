@@ -1,13 +1,13 @@
 # PROLOGUE #
 
 ifeq ($(TARGET),3DS)
-	ifeq ($(strip $(DEVKITPRO)),)
-		$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro")
-	endif
+    ifeq ($(strip $(DEVKITPRO)),)
+        $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro")
+    endif
 
-	ifeq ($(strip $(DEVKITARM)),)
-		$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
-	endif
+    ifeq ($(strip $(DEVKITARM)),)
+        $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+    endif
 endif
 
 # TOOLS #
@@ -50,86 +50,86 @@ COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(BUILD_DI
 # COMMON LIBRARY SETUP #
 
 ifeq ($(LIBRARY),1)
-	EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
+    EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
 endif
 
 # TARGET SETUP #
 
 ifeq ($(TARGET),3DS)
-	ifeq ($(strip $(TITLE)),)
-		TITLE := $(NAME)
-	endif
+    ifeq ($(strip $(TITLE)),)
+        TITLE := $(NAME)
+    endif
 
-	REMOTE_IP ?= 127.0.0.1 # User-defined
+    REMOTE_IP ?= 127.0.0.1 # User-defined
 
-	AR := $(DEVKITARM)/bin/arm-none-eabi-ar
-	AS := $(DEVKITARM)/bin/arm-none-eabi-as
-	CC := $(DEVKITARM)/bin/arm-none-eabi-gcc
-	CXX := $(DEVKITARM)/bin/arm-none-eabi-g++
+    AR := $(DEVKITARM)/bin/arm-none-eabi-ar
+    AS := $(DEVKITARM)/bin/arm-none-eabi-as
+    CC := $(DEVKITARM)/bin/arm-none-eabi-gcc
+    CXX := $(DEVKITARM)/bin/arm-none-eabi-g++
 
-	BIN2S := $(DEVKITARM)/bin/bin2s
-	SMDHTOOL := $(DEVKITARM)/bin/smdhtool
-	_3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
-	_3DSLINK := $(DEVKITARM)/bin/3dslink
+    BIN2S := $(DEVKITARM)/bin/bin2s
+    SMDHTOOL := $(DEVKITARM)/bin/smdhtool
+    _3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
+    _3DSLINK := $(DEVKITARM)/bin/3dslink
 
-	ifeq ($(OS),Windows_NT)
-		MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom.exe
-		BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool.exe
-		CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra.exe
-	else
-		UNAME_S := $(shell uname -s)
-		ifeq ($(UNAME_S),Linux)
-			MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux
-			BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux
-			CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux
-		endif
-		ifeq ($(UNAME_S),Darwin)
-			MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac
-			BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac
-			CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac
-		endif
-	endif
+    ifeq ($(OS),Windows_NT)
+        MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom.exe
+        BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool.exe
+        CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra.exe
+    else
+        UNAME_S := $(shell uname -s)
+        ifeq ($(UNAME_S),Linux)
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux
+        endif
+        ifeq ($(UNAME_S),Darwin)
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac
+        endif
+    endif
 
-	ifeq ($(LIBRARY),1)
-		OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a
-	else
-		OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).smdh $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
-	endif
+    ifeq ($(LIBRARY),1)
+        OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a
+    else
+        OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).smdh $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
+    endif
 
-	LD_FLAGS += -specs=3dsx.specs
-	COMMON_CC_FLAGS += -mword-relocations -fomit-frame-pointer -ffast-math -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -DARM11 -D_3DS
+    LD_FLAGS += -specs=3dsx.specs
+    COMMON_CC_FLAGS += -mword-relocations -fomit-frame-pointer -ffast-math -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -DARM11 -D_3DS
 
-	_3DSXTOOL_FLAGS :=
-	COMMON_MAKEROM_FLAGS := -rsf $(BUILDTOOLS_DIR)/3ds/template.rsf -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -DAPP_TITLE="$(TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)"
+    _3DSXTOOL_FLAGS :=
+    COMMON_MAKEROM_FLAGS := -rsf $(BUILDTOOLS_DIR)/3ds/template.rsf -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -DAPP_TITLE="$(TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)"
 
-	ifneq ("$(wildcard $(ROMFS_DIR))","")
-		_3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
-		COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="RootPath: $(ROMFS_DIR)"
-	endif
+    ifneq ("$(wildcard $(ROMFS_DIR))","")
+        _3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
+        COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="RootPath: $(ROMFS_DIR)"
+    endif
 
-	ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
-		BANNER_IMAGE_ARG := -ci
-	else
-		BANNER_IMAGE_ARG := -i
-	endif
+    ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
+        BANNER_IMAGE_ARG := -ci
+    else
+        BANNER_IMAGE_ARG := -i
+    endif
 
-	ifeq ($(suffix $(BANNER_AUDIO)),.cwav)
-		BANNER_AUDIO_ARG := -ca
-	else
-		BANNER_AUDIO_ARG := -a
-	endif
+    ifeq ($(suffix $(BANNER_AUDIO)),.cwav)
+        BANNER_AUDIO_ARG := -ca
+    else
+        BANNER_AUDIO_ARG := -a
+    endif
 else
-	AR := ar
-	AS := as
-	CC := gcc
-	CXX := g++
+    AR := ar
+    AS := as
+    CC := gcc
+    CXX := g++
 
-	ifeq ($(LIBRARY),1)
-		OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).so
-		COMMON_CC_FLAGS += -fPIC
-	else
-		OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
-	endif
+    ifeq ($(LIBRARY),1)
+        OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).so
+        COMMON_CC_FLAGS += -fPIC
+    else
+        OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
+    endif
 endif
 
 # FINAL COMMON SETUP #
@@ -138,7 +138,7 @@ CC_FLAGS := $(COMMON_CC_FLAGS) -std=gnu99
 CXX_FLAGS := $(COMMON_CC_FLAGS) -std=gnu++11
 
 ifneq ($(EXTRA_OUTPUT_FILES),)
-	EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
+    EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
 endif
 
 # MAIN RULES #
@@ -205,7 +205,7 @@ $(BUILD_DIR)/%.shbin.o: %.shlist
 
 %.icn: $(ICON)
 	@echo $@
-	@$(BANNERTOOL) makesmdh -s "$(TITLE)" -l "$(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) $(ICON_FLAGS) -o $@ > /dev/null
+	@$(BANNERTOOL) makesmdh -s "$(TITLE)" -l "$(TITLE)" -p "$(AUTHOR)" -i $(ICON) $(ICON_FLAGS) -o $@ > /dev/null
 
 %.smdh: $(ICON)
 	@echo $@

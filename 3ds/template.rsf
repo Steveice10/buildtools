@@ -55,6 +55,15 @@ AccessControlInfo:
    #- Shop
    #- Shell
    #- CategoryHomeMenu
+  IoAccessControl:
+   #- FsMountNand
+   #- FsMountNandRoWrite
+   #- FsMountTwln
+   #- FsMountWnand
+   #- FsMountCardSpi
+   #- UseSdif3
+   #- CreateSeed
+   #- UseCardSpi
 
   # Process Settings
   MemoryType                    : Application # Application/System/Base
