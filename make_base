@@ -104,7 +104,7 @@ ifeq ($(TARGET),3DS)
 
     ifneq ("$(wildcard $(ROMFS_DIR))","")
         _3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
-        COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="RootPath: $(ROMFS_DIR)"
+        COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="$(ROMFS_DIR)"
     endif
 
     ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
