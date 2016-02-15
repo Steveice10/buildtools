@@ -68,6 +68,7 @@ ifeq ($(TARGET),3DS)
     CXX := $(DEVKITARM)/bin/arm-none-eabi-g++
 
     BIN2S := $(DEVKITARM)/bin/bin2s
+    PICASSO := $(DEVKITARM)/bin/picasso
     SMDHTOOL := $(DEVKITARM)/bin/smdhtool
     _3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
     _3DSLINK := $(DEVKITARM)/bin/3dslink
@@ -180,7 +181,7 @@ $(BUILD_DIR)/%.bin.o: %.bin
 
 define shader-as
 	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$@))
-	picasso -o $(CURBIN) $1
+	$(PICASSO) -o $(CURBIN) $1
 	$(BIN2S) $(CURBIN) | $(AS) -o $@
 	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURBIN) | tr . _)`.h
 	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
