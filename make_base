@@ -35,8 +35,6 @@ STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
 
 OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
 			$(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
-			$(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
-			$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
 			$(patsubst %.c,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
 			$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
 			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
@@ -60,6 +58,11 @@ endif
 # TARGET SETUP #
 
 ifeq ($(TARGET),3DS)
+    OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
+			$(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
+			$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
+		) $(OBJECT_FILES)
+
     ifeq ($(strip $(TITLE)),)
         TITLE := $(NAME)
     endif
