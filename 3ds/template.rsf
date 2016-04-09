@@ -40,7 +40,7 @@ AccessControlInfo:
    #- Debug
    #- TwlCardBackup
    #- TwlNandData
-   #- Boss
+   - Boss
    - DirectSdmc
    #- Core
    #- CtrNandRo
@@ -51,7 +51,7 @@ AccessControlInfo:
    #- ExportImportIvs
    #- DirectSdmcWrite
    #- SwitchCleanup
-   #- SaveDataMove
+   - SaveDataMove
    #- Shop
    #- Shell
    #- CategoryHomeMenu
