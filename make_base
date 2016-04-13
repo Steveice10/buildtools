@@ -33,12 +33,19 @@ EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
 
+BUILT_FILTER := $(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(BUILD_FILTER)) \
+		$(patsubst %.c,$(BUILD_DIR)/%.o,$(BUILD_FILTER)) \
+		$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(BUILD_FILTER)) \
+		$(patsubst %.s,$(BUILD_DIR)/%.o,$(BUILD_FILTER))
+
 OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
 			$(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
 			$(patsubst %.c,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
 			$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
 			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
 		)
+
+OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
 
 OUTPUT_ZIP_FILE := $(OUTPUT_DIR)/$(STRIPPED_NAME).zip
 
@@ -58,10 +65,15 @@ endif
 # TARGET SETUP #
 
 ifeq ($(TARGET),3DS)
+    BUILT_FILTER := $(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
+		$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
+
     OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
 			$(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
 			$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
 		) $(OBJECT_FILES)
+
+    OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
 
     ifeq ($(strip $(TITLE)),)
         TITLE := $(NAME)
