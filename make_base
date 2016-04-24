@@ -47,7 +47,7 @@ OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
 
 OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
 
-OUTPUT_ZIP_FILE := $(OUTPUT_DIR)/$(STRIPPED_NAME).zip
+OUTPUT_ZIP_FILE ?= $(OUTPUT_DIR)/$(STRIPPED_NAME).zip
 
 LD_FLAGS := $(patsubst %,-L%/lib,$(LIBRARY_DIRS)) $(patsubst %,-l%,$(LIBRARIES))
 COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(BUILD_DIR)/%,$(dir $(call rwildcard,$(dir),*))))) $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall $(BUILD_FLAGS)
