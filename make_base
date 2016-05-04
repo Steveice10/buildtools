@@ -67,6 +67,7 @@ endif
 # COMMON LIBRARY SETUP #
 
 ifeq ($(LIBRARY),1)
+    STRIPPED_NAME := lib$(STRIPPED_NAME)
     EXTRA_OUTPUT_FILES += $(INCLUDE_DIRS)
 endif
 
@@ -118,7 +119,7 @@ ifeq ($(TARGET),3DS)
     endif
 
     ifeq ($(LIBRARY),1)
-        OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a
+        OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
     else
         OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).smdh $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
     endif
@@ -152,7 +153,7 @@ else ifeq ($(TARGET),WIIU)
     CXX := $(DEVKITPPC)/bin/powerpc-eabi-g++
 
     ifeq ($(LIBRARY),1)
-        OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a
+        OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
     else
         OUTPUT_FILES := $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
     endif
@@ -166,7 +167,7 @@ else
     CXX := g++
 
     ifeq ($(LIBRARY),1)
-        OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).so
+        OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
         COMMON_CC_FLAGS += -fPIC
     else
         OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
