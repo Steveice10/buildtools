@@ -1,12 +1,20 @@
 # PROLOGUE #
 
-ifeq ($(TARGET),3DS)
+ifeq ($(TARGET),$(filter $(TARGET),3DS WIIU))
     ifeq ($(strip $(DEVKITPRO)),)
         $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro")
     endif
+endif
 
+ifeq ($(TARGET),3DS)
     ifeq ($(strip $(DEVKITARM)),)
         $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+    endif
+endif
+
+ifeq ($(TARGET),WIIU)
+    ifeq ($(strip $(DEVKITPPC)),)
+        $(error "Please set DEVKITPPC in your environment. export DEVKITPPC=<path to>devkitPPC")
     endif
 endif
 
@@ -137,6 +145,20 @@ ifeq ($(TARGET),3DS)
     else
         BANNER_AUDIO_ARG := -a
     endif
+else ifeq ($(TARGET),WIIU)
+    AR := $(DEVKITPPC)/bin/powerpc-eabi-ar
+    AS := $(DEVKITPPC)/bin/powerpc-eabi-as
+    CC := $(DEVKITPPC)/bin/powerpc-eabi-gcc
+    CXX := $(DEVKITPPC)/bin/powerpc-eabi-g++
+
+    ifeq ($(LIBRARY),1)
+        OUTPUT_FILES := $(OUTPUT_DIR)/lib/lib$(STRIPPED_NAME).a
+    else
+        OUTPUT_FILES := $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
+    endif
+
+    LD_FLAGS += -T $(BUILDTOOLS_DIR)/wiiu/wiiu.ld -Wl,-d,--gc-sections
+    COMMON_CC_FLAGS += -mrvl -mcpu=750 -meabi -mhard-float -ffast-math -DPPC -DWIIU
 else
     AR := ar
     AS := as
@@ -238,6 +260,30 @@ $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(OUTPUT_DIR)/3ds
 %.cia: %.elf $(BUILD_DIR)/banner.bnr $(BUILD_DIR)/icon.icn
 	@echo $@
 	@$(MAKEROM) -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_FLAGS)
+
+else ifeq ($(TARGET),WIIU)
+
+ifeq ($(LIBRARY),1)
+install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
+	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(STRIPPED_NAME) > /dev/null
+	@echo "Installed."
+endif
+
+$(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml:
+	@echo $@
+	@cp $(BUILDTOOLS_DIR)/wiiu/meta_template.xml $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(TITLE)/$(subst /,\/,$(TITLE))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(AUTHOR)/$(subst /,\/,$(AUTHOR))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(VERSION)/$(subst /,\/,$(VERSION))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(RELEASE_DATE)/$(subst /,\/,$(shell date +'%Y%m%d%H%M%S'))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(SHORT_DESCRIPTION)/$(subst /,\/,$(DESCRIPTION))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(LONG_DESCRIPTION)/$(subst /,\/,$(LONG_DESCRIPTION))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+
+$(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png:
+	@echo $@
+	@cp $(ICON) $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
+
 else
 
 ifeq ($(LIBRARY),1)
@@ -253,6 +299,7 @@ run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/bin
 	@echo "Installed."
+
 endif
 
 endif
