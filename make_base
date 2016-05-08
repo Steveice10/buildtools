@@ -161,16 +161,60 @@ else ifeq ($(TARGET),WIIU)
     LD_FLAGS += -T $(BUILDTOOLS_DIR)/wiiu/wiiu.ld -Wl,-d,--gc-sections
     COMMON_CC_FLAGS += -mrvl -mcpu=750 -meabi -mhard-float -ffast-math -DPPC -DWIIU
 else
-    AR := ar
-    AS := as
-    CC := gcc
-    CXX := g++
+    ifeq ($(OS),Windows_NT)
+        AR := ar
+        AS := as
+        CC := gcc
+        CXX := g++
 
-    ifeq ($(LIBRARY),1)
-        OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
-        COMMON_CC_FLAGS += -fPIC
+        ifeq ($(LIBRARY),1)
+            OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
+            COMMON_CC_FLAGS += -fPIC
+        else
+            OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
+        endif
     else
-        OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
+        ifeq ($(TARGET),WIN32)
+            AR := i686-w64-mingw32-ar
+            AS := i686-w64-mingw32-as
+            CC := i686-w64-mingw32-gcc
+            CXX := i686-w64-mingw32-g++
+
+            LD_FLAGS += -static-libstdc++ -static-libgcc -static
+
+            ifeq ($(LIBRARY),1)
+                OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
+                COMMON_CC_FLAGS += -fPIC
+            else
+                OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
+            endif
+        else ifeq ($(TARGET),WIN64)
+            AR := x86_64-w64-mingw32-ar
+            AS := x86_64-w64-mingw32-as
+            CC := x86_64-w64-mingw32-gcc
+            CXX := x86_64-w64-mingw32-g++
+
+            LD_FLAGS += -static-libstdc++ -static-libgcc -static
+
+            ifeq ($(LIBRARY),1)
+                OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
+                COMMON_CC_FLAGS += -fPIC
+            else
+                OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
+            endif
+        else
+            AR := ar
+            AS := as
+            CC := gcc
+            CXX := g++
+
+            ifeq ($(LIBRARY),1)
+                OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
+                COMMON_CC_FLAGS += -fPIC
+            else
+                OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
+            endif
+        endif
     endif
 endif
 
@@ -287,6 +331,34 @@ $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png:
 
 else
 
+ifeq ($(OS),Windows_NT)
+
+ifneq ($(LIBRARY),1)
+run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@./$< $(RUN_FLAGS)
+endif
+
+else
+
+ifeq ($(TARGET),WIN32)
+
+ifneq ($(LIBRARY),1)
+run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@wine ./$< $(RUN_FLAGS)
+endif
+
+else ifeq ($(TARGET),WIN64)
+
+ifneq ($(LIBRARY),1)
+run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@wine ./$< $(RUN_FLAGS)
+endif
+
+else
+
 ifeq ($(LIBRARY),1)
 install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/lib
@@ -300,6 +372,9 @@ run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/bin
 	@echo "Installed."
+endif
+
+endif
 
 endif
 
@@ -326,6 +401,14 @@ $(OUTPUT_DIR)/$(STRIPPED_NAME): $(OBJECT_FILES)
 	@$(AR) -rc $@ $^
 
 %.so: $(OBJECT_FILES)
+	@echo $@
+	@$(CXX) $(CXX_FLAGS) -shared $^ -o $@ $(LD_FLAGS)
+
+%.exe: $(OBJECT_FILES)
+	@echo $@
+	@$(CXX) $(CXX_FLAGS) $^ -o $@ $(LD_FLAGS)
+
+%.dll: $(OBJECT_FILES)
 	@echo $@
 	@$(CXX) $(CXX_FLAGS) -shared $^ -o $@ $(LD_FLAGS)
 
