@@ -147,10 +147,14 @@ ifeq ($(TARGET),3DS)
         BANNER_AUDIO_ARG := -a
     endif
 else ifeq ($(TARGET),WIIU)
+    REMOTE_IP ?= 127.0.0.1 # User-defined
+
     AR := $(DEVKITPPC)/bin/powerpc-eabi-ar
     AS := $(DEVKITPPC)/bin/powerpc-eabi-as
     CC := $(DEVKITPPC)/bin/powerpc-eabi-gcc
     CXX := $(DEVKITPPC)/bin/powerpc-eabi-g++
+
+    WIILOAD_BIN := $(DEVKITPPC)/bin/wiiload
 
     ifeq ($(LIBRARY),1)
         OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
@@ -313,6 +317,10 @@ install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
 	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(STRIPPED_NAME) > /dev/null
 	@echo "Installed."
+else
+runhw: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@WIILOAD=tcp:$(REMOTE_IP) $(WIILOAD_BIN) $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(RUN_FLAGS)
 endif
 
 $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml:
