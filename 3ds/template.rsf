@@ -228,7 +228,7 @@ AccessControlInfo:
    - ir:USER
    - mic:u
    - ndm:u
-   - news:u
+   - news:s
    - nwm::UDS
    - ptm:u
    - pxi:dev
