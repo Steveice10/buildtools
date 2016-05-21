@@ -269,7 +269,7 @@ define shader-as
 	$(eval CURBIN := $(patsubst %.shbin.c,%.shbin,$@))
 	$(PICASSO) -o $(CURBIN) $1
 	@cd $(dir $(CURBIN)); \
-	xxd -i $(notdir $(CURBIN)) $(CURDIR)/$@
+	xxd -i $(notdir $(CURBIN)) "$(CURDIR)/$@"
 	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
 	echo "extern const u32" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(CURBIN) | tr . _)`.h
 endef
@@ -443,7 +443,7 @@ $(BUILD_DIR)/%.bin.o: $(BUILD_DIR)/%.bin.c
 $(BUILD_DIR)/%.bin.c: %.bin
 	@echo $@
 	@cd $(<D); \
-	xxd -i $(<F) $(CURDIR)/$@
+	xxd -i $(<F) "$(CURDIR)/$@"
 	@echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
 	@echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
 
