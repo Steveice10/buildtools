@@ -198,22 +198,17 @@ else
         endif
     else
         ifeq ($(TARGET),$(filter $(TARGET),WIN32 WIN64))
-            UNAME_P := $(shell uname -p)
-            ifeq ($(UNAME_P),x86_64)
-                AR := x86_64-w64-mingw32-ar
-                AS := x86_64-w64-mingw32-as
-                CC := x86_64-w64-mingw32-gcc
-                CXX := x86_64-w64-mingw32-g++
-            else
+            ifeq ($(TARGET),WIN32)
                 AR := i686-w64-mingw32-ar
                 AS := i686-w64-mingw32-as
                 CC := i686-w64-mingw32-gcc
                 CXX := i686-w64-mingw32-g++
-            endif
-
-            ifeq ($(TARGET),WIN32)
                 COMMON_CC_FLAGS += -m32
             else ifeq ($(TARGET),WIN64)
+                AR := x86_64-w64-mingw32-ar
+                AS := x86_64-w64-mingw32-as
+                CC := x86_64-w64-mingw32-gcc
+                CXX := x86_64-w64-mingw32-g++
                 COMMON_CC_FLAGS += -m64
             endif
 
