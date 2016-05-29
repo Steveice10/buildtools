@@ -101,15 +101,28 @@ ifeq ($(TARGET),3DS)
     _3DSLINK := $(DEVKITARM)/bin/3dslink
 
     ifeq ($(OS),Windows_NT)
-        MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom.exe
-        BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool.exe
-        CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra.exe
+        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom64.exe
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool64.exe
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra64.exe
+        else
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom32.exe
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool32.exe
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra32.exe
+        endif
     else
         UNAME_S := $(shell uname -s)
         ifeq ($(UNAME_S),Linux)
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux
+            UNAME_P := $(shell uname -p)
+            ifeq ($(UNAME_P),x86_64)
+                MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux64
+                BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux64
+                CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux64
+            else
+                MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux32
+                BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux32
+                CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux32
+            endif
         endif
         ifeq ($(UNAME_S),Darwin)
             MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac
@@ -171,6 +184,12 @@ else
         CC := gcc
         CXX := g++
 
+        ifeq ($(TARGET),NATIVE32)
+            COMMON_CC_FLAGS += -m32
+        else ifeq ($(TARGET),NATIVE64)
+            COMMON_CC_FLAGS += -m64
+        endif
+
         ifeq ($(LIBRARY),1)
             OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
             COMMON_CC_FLAGS += -fPIC
@@ -178,25 +197,25 @@ else
             OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
         endif
     else
-        ifeq ($(TARGET),WIN32)
-            AR := i686-w64-mingw32-ar
-            AS := i686-w64-mingw32-as
-            CC := i686-w64-mingw32-gcc
-            CXX := i686-w64-mingw32-g++
-
-            LD_FLAGS += -static-libstdc++ -static-libgcc -static
-
-            ifeq ($(LIBRARY),1)
-                OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
-                COMMON_CC_FLAGS += -fPIC
+        ifeq ($(TARGET),$(filter $(TARGET),WIN32 WIN64))
+            UNAME_P := $(shell uname -p)
+            ifeq ($(UNAME_P),x86_64)
+                AR := x86_64-w64-mingw32-ar
+                AS := x86_64-w64-mingw32-as
+                CC := x86_64-w64-mingw32-gcc
+                CXX := x86_64-w64-mingw32-g++
             else
-                OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
+                AR := i686-w64-mingw32-ar
+                AS := i686-w64-mingw32-as
+                CC := i686-w64-mingw32-gcc
+                CXX := i686-w64-mingw32-g++
             endif
-        else ifeq ($(TARGET),WIN64)
-            AR := x86_64-w64-mingw32-ar
-            AS := x86_64-w64-mingw32-as
-            CC := x86_64-w64-mingw32-gcc
-            CXX := x86_64-w64-mingw32-g++
+
+            ifeq ($(TARGET),WIN32)
+                COMMON_CC_FLAGS += -m32
+            else ifeq ($(TARGET),WIN64)
+                COMMON_CC_FLAGS += -m64
+            endif
 
             LD_FLAGS += -static-libstdc++ -static-libgcc -static
 
@@ -211,6 +230,12 @@ else
             AS := as
             CC := gcc
             CXX := g++
+
+            ifeq ($(TARGET),NATIVE32)
+                COMMON_CC_FLAGS += -m32
+            else ifeq ($(TARGET),NATIVE64)
+                COMMON_CC_FLAGS += -m64
+            endif
 
             ifeq ($(LIBRARY),1)
                 OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
