@@ -113,8 +113,8 @@ ifeq ($(TARGET),3DS)
     else
         UNAME_S := $(shell uname -s)
         ifeq ($(UNAME_S),Linux)
-            UNAME_P := $(shell uname -p)
-            ifeq ($(UNAME_P),x86_64)
+            UNAME_M := $(shell uname -m)
+            ifeq ($(UNAME_M),$(filter $(UNAME_M),x86_64 amd64))
                 MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux64
                 BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux64
                 CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux64
@@ -123,8 +123,7 @@ ifeq ($(TARGET),3DS)
                 BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux32
                 CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux32
             endif
-        endif
-        ifeq ($(UNAME_S),Darwin)
+        else ifeq ($(UNAME_S),Darwin)
             MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac
             BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac
             CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac
