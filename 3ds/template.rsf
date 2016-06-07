@@ -222,6 +222,7 @@ AccessControlInfo:
    - frd:u
    - fs:USER
    - gsp::Gpu
+   - gsp::Lcd
    - hid:USER
    - http:C
    - ir:rst
@@ -230,7 +231,9 @@ AccessControlInfo:
    - mic:u
    - ndm:u
    - news:s
+   - nwm::EXT
    - nwm::UDS
+   - ptm:sysm
    - ptm:u
    - pxi:dev
    - soc:U
