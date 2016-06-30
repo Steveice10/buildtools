@@ -133,7 +133,7 @@ ifeq ($(TARGET),3DS)
     ifeq ($(LIBRARY),1)
         OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
     else
-        OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).smdh $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
+        OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
     endif
 
     LD_FLAGS += -specs=3dsx.specs
@@ -253,7 +253,6 @@ endif
 # MAIN RULES #
 
 .PHONY: all run install clean
-.PRECIOUS: %.bnr %.icn
 
 all: $(OUTPUT_ZIP_FILE)
 
@@ -317,7 +316,7 @@ $(BUILD_DIR)/%.shbin.c: %.shlist
 	@echo $@
 	@$(SMDHTOOL) --create "$(TITLE)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
 
-$(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.smdh
+$(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(BUILD_DIR)/meta.smdh
 	@echo $@
 	@$(_3DSXTOOL) $< $@ --smdh=$(word 2,$^) $(_3DSXTOOL_FLAGS)
 
