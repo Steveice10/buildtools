@@ -7,11 +7,11 @@ RomFs:
   RootPath: $(APP_ROMFS)
 
 TitleInfo:
-  Category                : Application
+  Category                : $(APP_CATEGORY)
   UniqueId                : $(APP_UNIQUE_ID)
 
 Option:
-  UseOnSD                 : true # true if App is to be installed to SD
+  UseOnSD                 : $(APP_USE_ON_SD) # true if App is to be installed to SD
   FreeProductCode         : true # Removes limitations on ProductCode
   MediaFootPadding        : false # If true CCI files are created with padding
   EnableCrypt             : $(APP_ENCRYPTED) # Enables encryption for NCCH and CIA
@@ -67,7 +67,7 @@ AccessControlInfo:
    - UseCardSpi
 
   # Process Settings
-  MemoryType                    : Application # Application/System/Base
+  MemoryType                    : $(APP_MEMORY_TYPE) # Application/System/Base
   SystemMode                    : $(APP_SYSTEM_MODE) # 64MB(Default)/96MB/80MB/72MB/32MB
   IdealProcessor                : 0
   AffinityMask                  : 1
@@ -86,8 +86,8 @@ AccessControlInfo:
 
   # New3DS Exclusive Process Settings
   SystemModeExt                 : $(APP_SYSTEM_MODE_EXT) # Legacy(Default)/124MB/178MB  Legacy:Use Old3DS SystemMode
-  CpuSpeed                      : 804MHz # 268MHz(Default)/804MHz
-  EnableL2Cache                 : true # false(default)/true
+  CpuSpeed                      : $(APP_CPU_SPEED) # 268MHz(Default)/804MHz
+  EnableL2Cache                 : $(APP_ENABLE_L2_CACHE) # false(default)/true
   CanAccessCore2                : true 
 
   # Virtual Address Mappings
