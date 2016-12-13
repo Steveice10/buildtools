@@ -280,7 +280,7 @@ install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 else
 run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/$(STRIPPED_NAME).elf
+	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
 
 runhw: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
