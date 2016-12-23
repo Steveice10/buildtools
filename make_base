@@ -186,16 +186,76 @@ else ifeq ($(TARGET),WIIU)
     COMMON_CC_FLAGS += -mrvl -mcpu=750 -meabi -mhard-float -ffast-math -DPPC -DWIIU
 else
     ifeq ($(OS),Windows_NT)
-        AR := ar
-        AS := as
-        CC := gcc
-        CXX := g++
+        HOST_OS := windows
+        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+            HOST_ARCH := x86_64
+        else
+            HOST_ARCH := i686
+        endif
+    else
+        UNAME_S := $(shell uname -s)
+        ifeq ($(UNAME_S),Darwin)
+            HOST_OS := mac
+        else
+            HOST_OS := linux
+        endif
 
-        ifeq ($(TARGET),NATIVE32)
+        UNAME_M := $(shell uname -m)
+        ifeq ($(UNAME_M),$(filter $(UNAME_M),x86_64 amd64))
+            HOST_ARCH := x86_64
+        else
+            HOST_ARCH := i686
+        endif
+    endif
+
+    ifeq ($(TARGET),WIN32)
+        TARGET_OS := windows
+        TARGET_ARCH := i686
+    else ifeq ($(TARGET),WIN64)
+        TARGET_OS := windows
+        TARGET_ARCH := x86_64
+    else ifeq ($(TARGET),LINUX32)
+        TARGET_OS := linux
+        TARGET_ARCH := i686
+    else ifeq ($(TARGET),LINUX64)
+        TARGET_OS := linux
+        TARGET_ARCH := x86_64
+    else ifeq ($(TARGET),MAC32)
+        TARGET_OS := mac
+        TARGET_ARCH := i686
+    else ifeq ($(TARGET),MAC64)
+        TARGET_OS := mac
+        TARGET_ARCH := x86_64
+    else
+        TARGET_OS := $(HOST_OS)
+        TARGET_ARCH := $(HOST_ARCH)
+    endif
+
+    ifeq ($(TARGET_OS),windows)
+        ifeq ($(HOST_OS),windows)
+            AR := ar
+            AS := as
+            CC := gcc
+            CXX := g++
+        else ifeq ($(TARGET_ARCH),i686)
+            AR := i686-w64-mingw32-ar
+            AS := i686-w64-mingw32-as
+            CC := i686-w64-mingw32-gcc
+            CXX := i686-w64-mingw32-g++
+        else ifeq ($(TARGET_ARCH),x86_64)
+            AR := x86_64-w64-mingw32-ar
+            AS := x86_64-w64-mingw32-as
+            CC := x86_64-w64-mingw32-gcc
+            CXX := x86_64-w64-mingw32-g++
+        endif
+
+        ifeq ($(TARGET_ARCH),i686)
             COMMON_CC_FLAGS += -m32
-        else ifeq ($(TARGET),NATIVE64)
+        else ifeq ($(TARGET_ARCH),x86_64)
             COMMON_CC_FLAGS += -m64
         endif
+
+        LD_FLAGS += -static-libstdc++ -static-libgcc -static
 
         ifeq ($(LIBRARY),1)
             OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
@@ -203,48 +263,65 @@ else
         else
             OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
         endif
-    else
-        ifeq ($(TARGET),$(filter $(TARGET),WIN32 WIN64))
-            ifeq ($(TARGET),WIN32)
-                AR := i686-w64-mingw32-ar
-                AS := i686-w64-mingw32-as
-                CC := i686-w64-mingw32-gcc
-                CXX := i686-w64-mingw32-g++
-                COMMON_CC_FLAGS += -m32
-            else ifeq ($(TARGET),WIN64)
-                AR := x86_64-w64-mingw32-ar
-                AS := x86_64-w64-mingw32-as
-                CC := x86_64-w64-mingw32-gcc
-                CXX := x86_64-w64-mingw32-g++
-                COMMON_CC_FLAGS += -m64
-            endif
-
-            LD_FLAGS += -static-libstdc++ -static-libgcc -static
-
-            ifeq ($(LIBRARY),1)
-                OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
-                COMMON_CC_FLAGS += -fPIC
-            else
-                OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
-            endif
-        else
+    else ifeq ($(TARGET_OS),mac)
+        ifeq ($(HOST_OS),mac)
             AR := ar
             AS := as
             CC := gcc
             CXX := g++
+        else ifeq ($(TARGET_ARCH),i686)
+            AR := i686-apple-darwin15-ar
+            AS := i686-apple-darwin15-as
+            CC := i686-apple-darwin15-gcc
+            CXX := i686-apple-darwin15-g++
+        else ifeq ($(TARGET_ARCH),x86_64)
+            AR := x86_64-apple-darwin15-ar
+            AS := x86_64-apple-darwin15-as
+            CC := x86_64-apple-darwin15-gcc
+            CXX := x86_64-apple-darwin15-g++
+        endif
 
-            ifeq ($(TARGET),NATIVE32)
-                COMMON_CC_FLAGS += -m32
-            else ifeq ($(TARGET),NATIVE64)
-                COMMON_CC_FLAGS += -m64
-            endif
+        ifeq ($(TARGET_ARCH),i686)
+            COMMON_CC_FLAGS += -m32
+        else ifeq ($(TARGET_ARCH),x86_64)
+            COMMON_CC_FLAGS += -m64
+        endif
 
-            ifeq ($(LIBRARY),1)
-                OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
-                COMMON_CC_FLAGS += -fPIC
-            else
-                OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
-            endif
+        ifeq ($(LIBRARY),1)
+            OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dylib
+            COMMON_CC_FLAGS += -fPIC
+        else
+            OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
+        endif
+    else ifeq ($(TARGET_OS),linux)
+        ifeq ($(HOST_OS),linux)
+            AR := ar
+            AS := as
+            CC := gcc
+            CXX := g++
+        else ifeq ($(TARGET_ARCH),i686)
+            AR := i686-pc-linux-gnu-ar
+            AS := i686-pc-linux-gnu-as
+            CC := i686-pc-linux-gnu-gcc
+            CXX := i686-pc-linux-gnu-g++
+        else ifeq ($(TARGET_ARCH),x86_64)
+            AR := x86_64-pc-linux-gnu-ar
+            AS := x86_64-pc-linux-gnu-as
+            CC := x86_64-pc-linux-gnu-gcc
+            CXX := x86_64-pc-linux-gnu-g++
+        endif
+
+        ifeq ($(TARGET_ARCH),i686)
+            COMMON_CC_FLAGS += -m32
+        else ifeq ($(TARGET_ARCH),x86_64)
+            COMMON_CC_FLAGS += -m64
+        endif
+
+        ifeq ($(LIBRARY),1)
+            OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
+            COMMON_CC_FLAGS += -fPIC
+        else
+            OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
         endif
     endif
 endif
@@ -445,6 +522,10 @@ $(OUTPUT_DIR)/$(STRIPPED_NAME): $(OBJECT_FILES)
 %.dll: $(OBJECT_FILES)
 	@echo $@
 	@$(CXX) $(CXX_FLAGS) -shared $^ -o $@ $(LD_FLAGS)
+
+%.dylib: $(OBJECT_FILES)
+	@echo $@
+	@$(CXX) $(CXX_FLAGS) -dynamiclib -undefined suppress -flat_namespace $^ -o $@ $(LD_FLAGS)
 
 $(BUILD_DIR)/%.o: %.c
 	@echo $@
