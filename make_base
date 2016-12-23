@@ -17,7 +17,7 @@ endif
 
 ifneq ($(TARGETS),)
 
-.PHONY: all
+.PHONY: all clean
 all:
 	@$(foreach target,$(TARGETS),make --no-print-directory TARGET=$(target);)
 
@@ -389,10 +389,6 @@ endif
 
 all: $(OUTPUT_ZIP_FILE)
 
-clean:
-	@rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
-	@echo "Cleaned."
-
 # TARGET RULES #
 
 ifeq ($(TARGET_OS),3ds)
@@ -609,3 +605,9 @@ DEPENDS	:= $(OBJECT_FILES:.o=.d)
 -include $(DEPENDS)
 
 endif
+
+# CLEAN #
+
+clean:
+	@rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
+	@echo "Cleaned."
