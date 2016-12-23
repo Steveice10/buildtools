@@ -354,7 +354,7 @@ else ifeq ($(TARGET_OS),3ds)
     else
         BANNER_AUDIO_ARG := -a
     endif
-else ifeq ($(TARGET),wiiu)
+else ifeq ($(TARGET_OS),wiiu)
     REMOTE_IP ?= 127.0.0.1 # User-defined
 
     AR := $(DEVKITPPC)/bin/powerpc-eabi-ar
