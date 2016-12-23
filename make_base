@@ -1,5 +1,32 @@
 # PROLOGUE #
 
+ALL_PC_TARGETS := WIN32 WIN64 MAC32 MAC64 LINUX32 LINUX64
+ALL_SPECIFIC_TARGETS := $(ALL_PC_TARGETS) 3DS WIIU
+ALL_TARGETS := NATIVE NATIVE32 NATIVE64 $(ALL_SPECIFIC_TARGETS)
+
+TARGET ?= NATIVE
+TARGETS :=
+
+ifneq (1,$(words $(TARGET)))
+    TARGETS := $(TARGET)
+else ifeq ($(TARGET),ALL)
+    TARGETS := $(ALL_SPECIFIC_TARGETS)
+else ifeq ($(TARGET),PC)
+    TARGETS := $(ALL_PC_TARGETS)
+endif
+
+ifneq ($(TARGETS),)
+
+.PHONY: all
+all:
+	@$(foreach target,$(TARGETS),make --no-print-directory TARGET=$(target);)
+
+else
+
+ifneq ($(MAKECMDGOALS),clean)
+    $(info Building for $(TARGET)...)
+endif
+
 ifeq ($(TARGET),$(filter $(TARGET),3DS WIIU))
     ifeq ($(strip $(DEVKITPRO)),)
         $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro")
@@ -41,16 +68,83 @@ EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 STRIPPED_NAME := $(subst $(SPACE),,$(NAME))
 
-BUILT_FILTER := $(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(BUILD_FILTER)) \
-		$(patsubst %.c,$(BUILD_DIR)/%.o,$(BUILD_FILTER)) \
-		$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(BUILD_FILTER)) \
-		$(patsubst %.s,$(BUILD_DIR)/%.o,$(BUILD_FILTER))
+ifeq ($(OS),Windows_NT)
+    HOST_OS := windows
+    ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+        HOST_ARCH := x86_64
+    else
+        HOST_ARCH := i686
+    endif
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        HOST_OS := mac
+    else ifeq ($(UNAME_S),Linux)
+        HOST_OS := linux
+    else
+        $(error "Unsupported host OS.")
+    endif
+
+    UNAME_M := $(shell uname -m)
+    ifeq ($(UNAME_M),$(filter $(UNAME_M),x86_64 amd64))
+        HOST_ARCH := x86_64
+    else ifeq ($(UNAME_M),$(filter $(UNAME_M),i386 i686))
+        HOST_ARCH := i686
+    else
+        $(error "Unsupported host architecture.")
+    endif
+endif
+
+ifeq ($(TARGET),NATIVE)
+    TARGET_OS := $(HOST_OS)
+    TARGET_ARCH := $(HOST_ARCH)
+else ifeq ($(TARGET),NATIVE32)
+    TARGET_OS := $(HOST_OS)
+    TARGET_ARCH := i686
+else ifeq ($(TARGET),NATIVE64)
+    TARGET_OS := $(HOST_OS)
+    TARGET_ARCH := x86_64
+else ifeq ($(TARGET),WIN32)
+    TARGET_OS := windows
+    TARGET_ARCH := i686
+else ifeq ($(TARGET),WIN64)
+    TARGET_OS := windows
+    TARGET_ARCH := x86_64
+else ifeq ($(TARGET),LINUX32)
+    TARGET_OS := linux
+    TARGET_ARCH := i686
+else ifeq ($(TARGET),LINUX64)
+    TARGET_OS := linux
+    TARGET_ARCH := x86_64
+else ifeq ($(TARGET),MAC32)
+    TARGET_OS := mac
+    TARGET_ARCH := i686
+else ifeq ($(TARGET),MAC64)
+    TARGET_OS := mac
+    TARGET_ARCH := x86_64
+else ifeq ($(TARGET),3DS)
+    TARGET_OS := 3ds
+    TARGET_ARCH := arm
+else ifeq ($(TARGET),WIIU)
+    TARGET_OS := wiiu
+    TARGET_ARCH := ppc
+else
+    $(error "Unknown target. Supported targets: $(ALL_TARGETS)")
+endif
+
+TARGET_BUILD_DIR := $(BUILD_DIR)/$(TARGET_OS)-$(TARGET_ARCH)
+TARGET_OUTPUT_DIR := $(OUTPUT_DIR)/$(TARGET_OS)-$(TARGET_ARCH)
+
+BUILT_FILTER := $(patsubst %.bin,$(TARGET_BUILD_DIR)/%.bin.o,$(BUILD_FILTER)) \
+		$(patsubst %.c,$(TARGET_BUILD_DIR)/%.o,$(BUILD_FILTER)) \
+		$(patsubst %.cpp,$(TARGET_BUILD_DIR)/%.o,$(BUILD_FILTER)) \
+		$(patsubst %.s,$(TARGET_BUILD_DIR)/%.o,$(BUILD_FILTER))
 
 OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
-			$(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
-			$(patsubst %.c,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
-			$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
-			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
+			$(patsubst %.bin,$(TARGET_BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
+			$(patsubst %.c,$(TARGET_BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
+			$(patsubst %.cpp,$(TARGET_BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
+			$(patsubst %.s,$(TARGET_BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
 		)
 
 OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
@@ -62,7 +156,7 @@ VERSION_MINOR ?= 0
 VERSION_MICRO ?= 0
 
 LD_FLAGS := $(patsubst %,-L%/lib,$(LIBRARY_DIRS)) $(patsubst %,-l%,$(LIBRARIES))
-COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(BUILD_DIR)/%,$(dir $(call rwildcard,$(dir),*))))) $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_MICRO=$(VERSION_MICRO) $(BUILD_FLAGS)
+COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(TARGET_BUILD_DIR)/%,$(dir $(call rwildcard,$(dir),*))))) $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_MICRO=$(VERSION_MICRO) $(BUILD_FLAGS)
 
 ifeq ($(findstring -O,$(BUILD_FLAGS)),)
 	COMMON_CC_FLAGS += -O2
@@ -77,13 +171,105 @@ endif
 
 # TARGET SETUP #
 
-ifeq ($(TARGET),3DS)
-    BUILT_FILTER := $(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
-		$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
+ifeq ($(TARGET_OS),windows)
+    ifeq ($(HOST_OS),windows)
+        AR := ar
+        AS := as
+        CC := gcc
+        CXX := g++
+    else ifeq ($(TARGET_ARCH),i686)
+        AR := i686-w64-mingw32-ar
+        AS := i686-w64-mingw32-as
+        CC := i686-w64-mingw32-gcc
+        CXX := i686-w64-mingw32-g++
+    else ifeq ($(TARGET_ARCH),x86_64)
+        AR := x86_64-w64-mingw32-ar
+        AS := x86_64-w64-mingw32-as
+        CC := x86_64-w64-mingw32-gcc
+        CXX := x86_64-w64-mingw32-g++
+    endif
+
+    ifeq ($(TARGET_ARCH),i686)
+        COMMON_CC_FLAGS += -m32
+    else ifeq ($(TARGET_ARCH),x86_64)
+        COMMON_CC_FLAGS += -m64
+    endif
+
+    LD_FLAGS += -static-libstdc++ -static-libgcc -static
+
+    ifeq ($(LIBRARY),1)
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
+        COMMON_CC_FLAGS += -fPIC
+    else
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).exe
+    endif
+else ifeq ($(TARGET_OS),mac)
+    ifeq ($(HOST_OS),mac)
+        AR := ar
+        AS := as
+        CC := gcc
+        CXX := g++
+    else ifeq ($(TARGET_ARCH),i686)
+        AR := i386-apple-darwin15-ar
+        AS := i386-apple-darwin15-as
+        CC := i386-apple-darwin15-gcc
+        CXX := i386-apple-darwin15-g++
+    else ifeq ($(TARGET_ARCH),x86_64)
+        AR := x86_64-apple-darwin15-ar
+        AS := x86_64-apple-darwin15-as
+        CC := x86_64-apple-darwin15-gcc
+        CXX := x86_64-apple-darwin15-g++
+    endif
+
+    ifeq ($(TARGET_ARCH),i686)
+        COMMON_CC_FLAGS += -m32
+    else ifeq ($(TARGET_ARCH),x86_64)
+        COMMON_CC_FLAGS += -m64
+    endif
+
+    ifeq ($(LIBRARY),1)
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).so $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).dylib
+        COMMON_CC_FLAGS += -fPIC
+    else
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME)
+    endif
+else ifeq ($(TARGET_OS),linux)
+    ifeq ($(HOST_OS),linux)
+        AR := ar
+        AS := as
+        CC := gcc
+        CXX := g++
+    else ifeq ($(TARGET_ARCH),i686)
+        AR := i686-pc-linux-gnu-ar
+        AS := i686-pc-linux-gnu-as
+        CC := i686-pc-linux-gnu-gcc
+        CXX := i686-pc-linux-gnu-g++
+    else ifeq ($(TARGET_ARCH),x86_64)
+        AR := x86_64-pc-linux-gnu-ar
+        AS := x86_64-pc-linux-gnu-as
+        CC := x86_64-pc-linux-gnu-gcc
+        CXX := x86_64-pc-linux-gnu-g++
+    endif
+
+    ifeq ($(TARGET_ARCH),i686)
+        COMMON_CC_FLAGS += -m32
+    else ifeq ($(TARGET_ARCH),x86_64)
+        COMMON_CC_FLAGS += -m64
+    endif
+
+    ifeq ($(LIBRARY),1)
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
+        COMMON_CC_FLAGS += -fPIC
+    else
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME)
+    endif
+else ifeq ($(TARGET_OS),3ds)
+    BUILT_FILTER := $(patsubst %.v.pica,$(TARGET_BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
+		$(patsubst %.shlist,$(TARGET_BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
 
     OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
-			$(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
-			$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
+			$(patsubst %.v.pica,$(TARGET_BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
+			$(patsubst %.shlist,$(TARGET_BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
 		) $(OBJECT_FILES)
 
     OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
@@ -108,8 +294,8 @@ ifeq ($(TARGET),3DS)
     _3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
     _3DSLINK := $(DEVKITARM)/bin/3dslink
 
-    ifeq ($(OS),Windows_NT)
-        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+    ifeq ($(HOST_OS),windows)
+        ifeq ($(HOST_ARCH),x86_64)
             MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom64.exe
             BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool64.exe
             CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra64.exe
@@ -118,37 +304,39 @@ ifeq ($(TARGET),3DS)
             BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool32.exe
             CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra32.exe
         endif
-    else
-        UNAME_S := $(shell uname -s)
-        ifeq ($(UNAME_S),Linux)
-            UNAME_M := $(shell uname -m)
-            ifeq ($(UNAME_M),$(filter $(UNAME_M),x86_64 amd64))
-                MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux64
-                BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux64
-                CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux64
-            else
-                MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux32
-                BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux32
-                CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux32
-            endif
-        else ifeq ($(UNAME_S),Darwin)
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac
+    else ifeq ($(HOST_OS),mac)
+        ifeq ($(HOST_ARCH),x86_64)
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac64
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac64
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac64
+        else
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac32
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac32
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac32
+        endif
+    else ifeq ($(HOST_OS),linux)
+        ifeq ($(HOST_ARCH),x86_64)
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux64
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux64
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux64
+        else
+            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux32
+            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux32
+            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux32
         endif
     endif
 
     ifeq ($(LIBRARY),1)
-        OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
     else
-        OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(OUTPUT_DIR)/$(STRIPPED_NAME).cia
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).elf $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).3ds $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).cia
     endif
 
     LD_FLAGS += -specs=3dsx.specs
     COMMON_CC_FLAGS += -mword-relocations -fomit-frame-pointer -ffast-math -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -DARM11 -D_3DS
 
     _3DSXTOOL_FLAGS :=
-    COMMON_MAKEROM_FLAGS := -rsf $(BUILDTOOLS_DIR)/3ds/template.rsf -target t -exefslogo -icon $(BUILD_DIR)/icon.icn -banner $(BUILD_DIR)/banner.bnr -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO) -DAPP_TITLE="$(TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)" -DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)" -DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" -DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"
+    COMMON_MAKEROM_FLAGS := -rsf $(BUILDTOOLS_DIR)/3ds/template.rsf -target t -exefslogo -icon $(TARGET_BUILD_DIR)/icon.icn -banner $(TARGET_BUILD_DIR)/banner.bnr -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO) -DAPP_TITLE="$(TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)" -DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)" -DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" -DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"
 
     ifneq ("$(wildcard $(ROMFS_DIR))","")
         _3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
@@ -166,7 +354,7 @@ ifeq ($(TARGET),3DS)
     else
         BANNER_AUDIO_ARG := -a
     endif
-else ifeq ($(TARGET),WIIU)
+else ifeq ($(TARGET),wiiu)
     REMOTE_IP ?= 127.0.0.1 # User-defined
 
     AR := $(DEVKITPPC)/bin/powerpc-eabi-ar
@@ -177,153 +365,13 @@ else ifeq ($(TARGET),WIIU)
     WIILOAD_BIN := $(DEVKITPPC)/bin/wiiload
 
     ifeq ($(LIBRARY),1)
-        OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
     else
-        OUTPUT_FILES := $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
     endif
 
     LD_FLAGS += -T $(BUILDTOOLS_DIR)/wiiu/wiiu.ld -Wl,-d,--gc-sections
     COMMON_CC_FLAGS += -mrvl -mcpu=750 -meabi -mhard-float -ffast-math -DPPC -DWIIU
-else
-    ifeq ($(OS),Windows_NT)
-        HOST_OS := windows
-        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
-            HOST_ARCH := x86_64
-        else
-            HOST_ARCH := i686
-        endif
-    else
-        UNAME_S := $(shell uname -s)
-        ifeq ($(UNAME_S),Darwin)
-            HOST_OS := mac
-        else
-            HOST_OS := linux
-        endif
-
-        UNAME_M := $(shell uname -m)
-        ifeq ($(UNAME_M),$(filter $(UNAME_M),x86_64 amd64))
-            HOST_ARCH := x86_64
-        else
-            HOST_ARCH := i686
-        endif
-    endif
-
-    ifeq ($(TARGET),WIN32)
-        TARGET_OS := windows
-        TARGET_ARCH := i686
-    else ifeq ($(TARGET),WIN64)
-        TARGET_OS := windows
-        TARGET_ARCH := x86_64
-    else ifeq ($(TARGET),LINUX32)
-        TARGET_OS := linux
-        TARGET_ARCH := i686
-    else ifeq ($(TARGET),LINUX64)
-        TARGET_OS := linux
-        TARGET_ARCH := x86_64
-    else ifeq ($(TARGET),MAC32)
-        TARGET_OS := mac
-        TARGET_ARCH := i686
-    else ifeq ($(TARGET),MAC64)
-        TARGET_OS := mac
-        TARGET_ARCH := x86_64
-    else
-        TARGET_OS := $(HOST_OS)
-        TARGET_ARCH := $(HOST_ARCH)
-    endif
-
-    ifeq ($(TARGET_OS),windows)
-        ifeq ($(HOST_OS),windows)
-            AR := ar
-            AS := as
-            CC := gcc
-            CXX := g++
-        else ifeq ($(TARGET_ARCH),i686)
-            AR := i686-w64-mingw32-ar
-            AS := i686-w64-mingw32-as
-            CC := i686-w64-mingw32-gcc
-            CXX := i686-w64-mingw32-g++
-        else ifeq ($(TARGET_ARCH),x86_64)
-            AR := x86_64-w64-mingw32-ar
-            AS := x86_64-w64-mingw32-as
-            CC := x86_64-w64-mingw32-gcc
-            CXX := x86_64-w64-mingw32-g++
-        endif
-
-        ifeq ($(TARGET_ARCH),i686)
-            COMMON_CC_FLAGS += -m32
-        else ifeq ($(TARGET_ARCH),x86_64)
-            COMMON_CC_FLAGS += -m64
-        endif
-
-        LD_FLAGS += -static-libstdc++ -static-libgcc -static
-
-        ifeq ($(LIBRARY),1)
-            OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dll
-            COMMON_CC_FLAGS += -fPIC
-        else
-            OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME).exe
-        endif
-    else ifeq ($(TARGET_OS),mac)
-        ifeq ($(HOST_OS),mac)
-            AR := ar
-            AS := as
-            CC := gcc
-            CXX := g++
-        else ifeq ($(TARGET_ARCH),i686)
-            AR := i686-apple-darwin15-ar
-            AS := i686-apple-darwin15-as
-            CC := i686-apple-darwin15-gcc
-            CXX := i686-apple-darwin15-g++
-        else ifeq ($(TARGET_ARCH),x86_64)
-            AR := x86_64-apple-darwin15-ar
-            AS := x86_64-apple-darwin15-as
-            CC := x86_64-apple-darwin15-gcc
-            CXX := x86_64-apple-darwin15-g++
-        endif
-
-        ifeq ($(TARGET_ARCH),i686)
-            COMMON_CC_FLAGS += -m32
-        else ifeq ($(TARGET_ARCH),x86_64)
-            COMMON_CC_FLAGS += -m64
-        endif
-
-        ifeq ($(LIBRARY),1)
-            OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).dylib
-            COMMON_CC_FLAGS += -fPIC
-        else
-            OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
-        endif
-    else ifeq ($(TARGET_OS),linux)
-        ifeq ($(HOST_OS),linux)
-            AR := ar
-            AS := as
-            CC := gcc
-            CXX := g++
-        else ifeq ($(TARGET_ARCH),i686)
-            AR := i686-pc-linux-gnu-ar
-            AS := i686-pc-linux-gnu-as
-            CC := i686-pc-linux-gnu-gcc
-            CXX := i686-pc-linux-gnu-g++
-        else ifeq ($(TARGET_ARCH),x86_64)
-            AR := x86_64-pc-linux-gnu-ar
-            AS := x86_64-pc-linux-gnu-as
-            CC := x86_64-pc-linux-gnu-gcc
-            CXX := x86_64-pc-linux-gnu-g++
-        endif
-
-        ifeq ($(TARGET_ARCH),i686)
-            COMMON_CC_FLAGS += -m32
-        else ifeq ($(TARGET_ARCH),x86_64)
-            COMMON_CC_FLAGS += -m64
-        endif
-
-        ifeq ($(LIBRARY),1)
-            OUTPUT_FILES := $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).a $(OUTPUT_DIR)/lib/$(STRIPPED_NAME).so
-            COMMON_CC_FLAGS += -fPIC
-        else
-            OUTPUT_FILES := $(OUTPUT_DIR)/$(STRIPPED_NAME)
-        endif
-    endif
 endif
 
 # FINAL COMMON SETUP #
@@ -332,7 +380,7 @@ CC_FLAGS := $(COMMON_CC_FLAGS) -std=gnu99
 CXX_FLAGS := $(COMMON_CC_FLAGS) -std=gnu++11
 
 ifneq ($(EXTRA_OUTPUT_FILES),)
-    EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
+    EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(TARGET_OUTPUT_DIR)
 endif
 
 # MAIN RULES #
@@ -347,26 +395,30 @@ clean:
 
 # TARGET RULES #
 
-ifeq ($(TARGET),3DS)
+ifeq ($(TARGET_OS),3ds)
 
 ifeq ($(LIBRARY),1)
-install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
-	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
-	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(STRIPPED_NAME) > /dev/null
-	@echo "Installed."
-else
-run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
-	@echo "Running..."
-	@$(CITRA) $(RUN_FLAGS) $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
 
-runhw: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+install: $(OUTPUT_ZIP_FILE)
+	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
+	@cp -r $(TARGET_OUTPUT_DIR)/* $(DEVKITPRO)/$(STRIPPED_NAME)
+	@echo "Installed."
+
+else
+
+run: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@$(_3DSLINK) --address $(REMOTE_IP) $(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
+	@$(CITRA) $(RUN_FLAGS) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
+
+runhw: $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@$(_3DSLINK) --address $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
+
 endif
 
-$(BUILD_DIR)/%.shbin.o: $(BUILD_DIR)/%.shbin.c
+$(TARGET_BUILD_DIR)/%.shbin.o: $(TARGET_BUILD_DIR)/%.shbin.c
 	@echo $@
-	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(TARGET_BUILD_DIR)/$*.d $< -o $@
 
 define shader-as
 	$(eval CURBIN := $(patsubst %.shbin.c,%.shbin,$@))
@@ -377,15 +429,15 @@ define shader-as
 	echo "extern const u32" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(CURBIN) | tr . _)`.h
 endef
 
-$(BUILD_DIR)/%.shbin.c: %.v.pica %.g.pica
+$(TARGET_BUILD_DIR)/%.shbin.c: %.v.pica %.g.pica
 	@echo $@
 	@$(call shader-as,$^)
 
-$(BUILD_DIR)/%.shbin.c: %.v.pica
+$(TARGET_BUILD_DIR)/%.shbin.c: %.v.pica
 	@echo $@
 	@$(call shader-as,$<)
 
-$(BUILD_DIR)/%.shbin.c: %.shlist
+$(TARGET_BUILD_DIR)/%.shbin.c: %.shlist
 	@echo $@
 	@$(call shader-as,$(foreach file,$(shell cat $<),$(dir $<)/$(file)))
 
@@ -401,94 +453,88 @@ $(BUILD_DIR)/%.shbin.c: %.shlist
 	@echo $@
 	@$(SMDHTOOL) --create "$(TITLE)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
 
-$(OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(OUTPUT_DIR)/%.elf $(BUILD_DIR)/meta.smdh
+$(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(TARGET_OUTPUT_DIR)/%.elf $(TARGET_BUILD_DIR)/meta.smdh
 	@echo $@
 	@$(_3DSXTOOL) $< $@ --smdh=$(word 2,$^) $(_3DSXTOOL_FLAGS)
 
-%.3ds: %.elf $(BUILD_DIR)/banner.bnr $(BUILD_DIR)/icon.icn
+%.3ds: %.elf $(TARGET_BUILD_DIR)/banner.bnr $(TARGET_BUILD_DIR)/icon.icn
 	@echo $@
 	@$(MAKEROM) -f cci -o $@ -elf $< -DAPP_ENCRYPTED=true $(COMMON_MAKEROM_FLAGS)
 
-%.cia: %.elf $(BUILD_DIR)/banner.bnr $(BUILD_DIR)/icon.icn
+%.cia: %.elf $(TARGET_BUILD_DIR)/banner.bnr $(TARGET_BUILD_DIR)/icon.icn
 	@echo $@
 	@$(MAKEROM) -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_FLAGS)
 
-else ifeq ($(TARGET),WIIU)
+else ifeq ($(TARGET_OS),wiiu)
 
 ifeq ($(LIBRARY),1)
-install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+
+install: $(OUTPUT_ZIP_FILE)
 	@mkdir -p $(DEVKITPRO)/$(STRIPPED_NAME)
-	@unzip -o $(OUTPUT_ZIP_FILE) -d $(DEVKITPRO)/$(STRIPPED_NAME) > /dev/null
+	@cp -r $(TARGET_OUTPUT_DIR)/* $(DEVKITPRO)/$(STRIPPED_NAME)
 	@echo "Installed."
+
 else
-runhw: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+
+runhw: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@WIILOAD=tcp:$(REMOTE_IP) $(WIILOAD_BIN) $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(RUN_FLAGS)
+	@WIILOAD=tcp:$(REMOTE_IP) $(WIILOAD_BIN) $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(RUN_FLAGS)
+
 endif
 
-$(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml:
+$(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml:
 	@echo $@
-	@cp $(BUILDTOOLS_DIR)/wiiu/meta_template.xml $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(TITLE)/$(subst /,\/,$(TITLE))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(AUTHOR)/$(subst /,\/,$(AUTHOR))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(VERSION)/$(subst /,\/,$(VERSION))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(RELEASE_DATE)/$(subst /,\/,$(shell date +'%Y%m%d%H%M%S'))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(SHORT_DESCRIPTION)/$(subst /,\/,$(DESCRIPTION))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(LONG_DESCRIPTION)/$(subst /,\/,$(LONG_DESCRIPTION))/g' $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@cp $(BUILDTOOLS_DIR)/wiiu/meta_template.xml $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(TITLE)/$(subst /,\/,$(TITLE))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(AUTHOR)/$(subst /,\/,$(AUTHOR))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(VERSION)/$(subst /,\/,$(VERSION))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(RELEASE_DATE)/$(subst /,\/,$(shell date +'%Y%m%d%H%M%S'))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(SHORT_DESCRIPTION)/$(subst /,\/,$(DESCRIPTION))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(LONG_DESCRIPTION)/$(subst /,\/,$(LONG_DESCRIPTION))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
 
-$(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png:
+$(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png:
 	@echo $@
-	@cp $(ICON) $(OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
+	@cp $(ICON) $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
 
-else
+else ifeq ($(TARGET_OS),windows)
+    ifeq ($(HOST_OS),$(filter $(HOST_OS),linux mac))
+        ifneq ($(LIBRARY),1)
 
-ifeq ($(OS),Windows_NT)
+run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+	@echo "Running..."
+	@wine ./$< $(RUN_FLAGS)
 
-ifneq ($(LIBRARY),1)
+        endif
+    else ifeq ($(HOST_OS),windows)
+        ifneq ($(LIBRARY),1)
+
 run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
 	@./$< $(RUN_FLAGS)
-endif
 
-else
+        endif
+    endif
+else ifeq ($(TARGET_OS),$(filter $(TARGET_OS),mac linux))
+    ifeq ($(HOST_OS),$(TARGET_OS))
+        ifeq ($(LIBRARY),1)
 
-ifeq ($(TARGET),WIN32)
-
-ifneq ($(LIBRARY),1)
-run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
-	@echo "Running..."
-	@wine ./$< $(RUN_FLAGS)
-endif
-
-else ifeq ($(TARGET),WIN64)
-
-ifneq ($(LIBRARY),1)
-run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
-	@echo "Running..."
-	@wine ./$< $(RUN_FLAGS)
-endif
-
-else
-
-ifeq ($(LIBRARY),1)
-install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+install: $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/lib
-	@install -m 0755 $(foreach dir,$(INCLUDE_DIRS),$(wildcard $(dir)/*)) /usr/local/include
+	@install -m 0644 $(foreach dir,$(INCLUDE_DIRS),$(wildcard $(dir)/*)) /usr/local/include
 	@echo "Installed."
-else
+
+        else
+
 run: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
 	@./$< $(RUN_FLAGS)
 
-install: $(OUTPUT_FILES) $(OUTPUT_ZIP_FILE)
+install: $(OUTPUT_ZIP_FILE)
 	@install -m 0755 $(OUTPUT_FILES) /usr/local/bin
 	@echo "Installed."
-endif
 
-endif
-
-endif
-
+        endif
+    endif
 endif
 
 # COMMON RULES #
@@ -497,9 +543,9 @@ $(OUTPUT_ZIP_FILE): $(OUTPUT_FILES) $(EXTRA_OUTPUT_FILES)
 	@echo $@
 	@$(EXTRA_OUTPUT_COPY_CMD)
 	@cd $(OUTPUT_DIR); \
-	zip -r $(patsubst $(OUTPUT_DIR)/%,%,$@ $^) > /dev/null
+	zip -r $(patsubst $(OUTPUT_DIR)/%,%,$@ * -x $(OUTPUT_ZIP_FILE)) > /dev/null
 
-$(OUTPUT_DIR)/$(STRIPPED_NAME): $(OBJECT_FILES)
+$(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME): $(OBJECT_FILES)
 	@echo $@
 	@$(CXX) $(CXX_FLAGS) $^ -o $@ $(LD_FLAGS)
 
@@ -527,32 +573,32 @@ $(OUTPUT_DIR)/$(STRIPPED_NAME): $(OBJECT_FILES)
 	@echo $@
 	@$(CXX) $(CXX_FLAGS) -dynamiclib -undefined suppress -flat_namespace $^ -o $@ $(LD_FLAGS)
 
-$(BUILD_DIR)/%.o: %.c
+$(TARGET_BUILD_DIR)/%.o: %.c
 	@echo $@
-	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(TARGET_BUILD_DIR)/$*.d $< -o $@
 
-$(BUILD_DIR)/%.o: %.cpp
+$(TARGET_BUILD_DIR)/%.o: %.cpp
 	@echo $@
-	@$(CXX) -c $(CXX_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+	@$(CXX) -c $(CXX_FLAGS) -MMD -MP -MF $(TARGET_BUILD_DIR)/$*.d $< -o $@
 
-$(BUILD_DIR)/%.o: %.s
+$(TARGET_BUILD_DIR)/%.o: %.s
 	@echo $@
-	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d -x assembler-with-cpp $< -o $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(TARGET_BUILD_DIR)/$*.d -x assembler-with-cpp $< -o $@
 
-$(BUILD_DIR)/%.o: %.S
+$(TARGET_BUILD_DIR)/%.o: %.S
 	@echo $@
-	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d -x assembler-with-cpp $< -o $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(TARGET_BUILD_DIR)/$*.d -x assembler-with-cpp $< -o $@
 
-$(BUILD_DIR)/%.bin.o: $(BUILD_DIR)/%.bin.c
+$(TARGET_BUILD_DIR)/%.bin.o: $(TARGET_BUILD_DIR)/%.bin.c
 	@echo $@
-	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(TARGET_BUILD_DIR)/$*.d $< -o $@
 
-$(BUILD_DIR)/%.bin.c: %.bin
+$(TARGET_BUILD_DIR)/%.bin.c: %.bin
 	@echo $@
 	@cd $(<D); \
 	xxd -i $(<F) "$(CURDIR)/$@"
-	@echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
-	@echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
+	@echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(TARGET_BUILD_DIR)/$< | tr . _)`.h
+	@echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(TARGET_BUILD_DIR)/$< | tr . _)`.h
 
 $(foreach file,$(OBJECT_FILES),$(eval $(call createdirrule,$(file))))
 $(foreach file,$(OUTPUT_FILES),$(eval $(call createdirrule,$(file))))
@@ -561,3 +607,5 @@ $(foreach file,$(OUTPUT_FILES),$(eval $(call createdirrule,$(file))))
 
 DEPENDS	:= $(OBJECT_FILES:.o=.d)
 -include $(DEPENDS)
+
+endif
