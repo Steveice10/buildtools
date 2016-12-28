@@ -370,8 +370,8 @@ else ifeq ($(TARGET_OS),wiiu)
         OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/$(STRIPPED_NAME).elf $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/icon.png
     endif
 
-    LD_FLAGS += -T $(BUILDTOOLS_DIR)/wiiu/wiiu.ld -Wl,-d,--gc-sections
-    COMMON_CC_FLAGS += -mrvl -mcpu=750 -meabi -mhard-float -ffast-math -DPPC -DWIIU
+    LD_FLAGS += -Wl,-d,--gc-sections
+    COMMON_CC_FLAGS += -mwup -mcpu=750 -meabi -mhard-float -ffast-math -DESPRESSO -DWIIU
 endif
 
 # FINAL COMMON SETUP #
