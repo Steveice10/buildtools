@@ -483,7 +483,7 @@ $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml:
 	@cp $(BUILDTOOLS_DIR)/wiiu/meta_template.xml $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
 	@sed -i -- 's/$$(TITLE)/$(subst /,\/,$(TITLE))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
 	@sed -i -- 's/$$(AUTHOR)/$(subst /,\/,$(AUTHOR))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
-	@sed -i -- 's/$$(VERSION)/$(subst /,\/,$(VERSION))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
+	@sed -i -- 's/$$(VERSION)/$(subst /,\/,$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
 	@sed -i -- 's/$$(RELEASE_DATE)/$(subst /,\/,$(shell date +'%Y%m%d%H%M%S'))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
 	@sed -i -- 's/$$(SHORT_DESCRIPTION)/$(subst /,\/,$(DESCRIPTION))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
 	@sed -i -- 's/$$(LONG_DESCRIPTION)/$(subst /,\/,$(LONG_DESCRIPTION))/g' $(TARGET_OUTPUT_DIR)/wiiu/apps/$(STRIPPED_NAME)/meta.xml
