@@ -281,7 +281,7 @@ else ifeq ($(TARGET_OS),3ds)
     CATEGORY ?= Application
     USE_ON_SD ?= true
     MEMORY_TYPE ?= Application
-    CPU_SPEED ?= 804MHz
+    CPU_SPEED ?= 268MHz
     ENABLE_L2_CACHE ?= true
 
     AR := $(DEVKITARM)/bin/arm-none-eabi-ar
