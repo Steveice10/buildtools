@@ -380,8 +380,16 @@ endif
 
 # FINAL COMMON SETUP #
 
-CC_FLAGS := $(COMMON_CC_FLAGS) -std=gnu99
-CXX_FLAGS := $(COMMON_CC_FLAGS) -std=gnu++11
+CC_FLAGS := $(COMMON_CC_FLAGS) $(BUILD_FLAGS_CC)
+CXX_FLAGS := $(COMMON_CC_FLAGS) $(BUILD_FLAGS_CXX)
+
+ifeq ($(findstring -std,$(BUILD_FLAGS_CC)),)
+	CC_FLAGS += -std=gnu99
+endif
+
+ifeq ($(findstring -std,$(BUILD_FLAGS_CXX)),)
+	CXX_FLAGS += -std=gnu++11
+endif
 
 ifneq ($(EXTRA_OUTPUT_FILES),)
     EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
