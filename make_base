@@ -343,8 +343,8 @@ else ifeq ($(TARGET_OS),3ds)
         COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="$(ROMFS_DIR)"
     endif
 
-    ifneq ("$(wildcard $(LOGO_FILE))","")
-        COMMON_MAKEROM_FLAGS += -logo "$(LOGO_FILE)"
+    ifneq ("$(wildcard $(LOGO))","")
+        COMMON_MAKEROM_FLAGS += -logo "$(LOGO)"
     endif
 
     ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
