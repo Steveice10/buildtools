@@ -151,9 +151,17 @@ OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
 
 OUTPUT_ZIP_FILE ?= $(OUTPUT_DIR)/$(STRIPPED_NAME).zip
 
-VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 0
-VERSION_MICRO ?= 0
+ifeq ($(strip $(VERSION_MAJOR)),)
+    VERSION_MAJOR := 0
+endif
+
+ifeq ($(strip $(VERSION_MINOR)),)
+    VERSION_MINOR := 0
+endif
+
+ifeq ($(strip $(VERSION_MICRO)),)
+    VERSION_MICRO := 0
+endif
 
 LD_FLAGS := $(patsubst %,-L%/lib,$(LIBRARY_DIRS)) $(patsubst %,-l%,$(LIBRARIES))
 COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(TARGET_BUILD_DIR)/%,$(dir $(call rwildcard,$(dir),*))))) $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_MICRO=$(VERSION_MICRO) $(BUILD_FLAGS)
@@ -294,6 +302,8 @@ else ifeq ($(TARGET_OS),3ds)
     _3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
     _3DSLINK := $(DEVKITARM)/bin/3dslink
 
+    SERVEFILES := python $(BUILDTOOLS_DIR)/3ds/servefiles.py
+
     ifeq ($(HOST_OS),windows)
         ifeq ($(HOST_ARCH),x86_64)
             MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom64.exe
@@ -345,6 +355,8 @@ else ifeq ($(TARGET_OS),3ds)
 
     ifneq ("$(wildcard $(LOGO))","")
         COMMON_MAKEROM_FLAGS += -logo "$(LOGO)"
+    else ifneq ($(LOGO),plain)
+        COMMON_MAKEROM_FLAGS += -logo "$(BUILDTOOLS_DIR)/3ds/logo.bcma.lz"
     endif
 
     ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
@@ -421,6 +433,11 @@ run: $(OUTPUT_ZIP_FILE)
 runhw: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
 	@$(_3DSLINK) --address $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
+
+install: $(OUTPUT_ZIP_FILE)
+	@echo "Installing..."
+	@$(SERVEFILES) $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).cia
+	@echo "Installed."
 
 endif
 
