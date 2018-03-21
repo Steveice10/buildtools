@@ -301,40 +301,11 @@ else ifeq ($(TARGET_OS),3ds)
     SMDHTOOL := $(DEVKITARM)/bin/smdhtool
     _3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
     _3DSLINK := $(DEVKITARM)/bin/3dslink
+    MAKEROM := makerom
+    BANNERTOOL := bannertool
+    CITRA := citra
 
     SERVEFILES := python $(BUILDTOOLS_DIR)/3ds/servefiles.py
-
-    ifeq ($(HOST_OS),windows)
-        ifeq ($(HOST_ARCH),x86_64)
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom64.exe
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool64.exe
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra64.exe
-        else
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom32.exe
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool32.exe
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra32.exe
-        endif
-    else ifeq ($(HOST_OS),mac)
-        ifeq ($(HOST_ARCH),x86_64)
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac64
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac64
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac64
-        else
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-mac32
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-mac32
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-mac32
-        endif
-    else ifeq ($(HOST_OS),linux)
-        ifeq ($(HOST_ARCH),x86_64)
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux64
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux64
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux64
-        else
-            MAKEROM := $(BUILDTOOLS_DIR)/3ds/makerom-linux32
-            BANNERTOOL := $(BUILDTOOLS_DIR)/3ds/bannertool-linux32
-            CITRA := $(BUILDTOOLS_DIR)/3ds/citra/citra-linux32
-        endif
-    endif
 
     ifeq ($(LIBRARY),1)
         OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
