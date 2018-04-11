@@ -363,6 +363,18 @@ endif
 
 # FINAL COMMON SETUP #
 
+CLANG_CC := $(subst gcc,clang,$(CC))
+CLANG_CC_EXISTS := $(shell which $(CLANG_CC) > /dev/null 2> /dev/null; echo $$?)
+ifeq ($(CLANG_CC_EXISTS),0)
+    CC := $(CLANG_CC)
+endif
+
+CLANG_CXX := $(subst g++,clang++,$(CXX))
+CLANG_CXX_EXISTS := $(shell which $(CLANG_CXX) > /dev/null 2> /dev/null; echo $$?)
+ifeq ($(CLANG_CXX_EXISTS),0)
+    CXX := $(CLANG_CXX)
+endif
+
 CC_FLAGS := $(COMMON_CC_FLAGS) $(BUILD_FLAGS_CC)
 CXX_FLAGS := $(COMMON_CC_FLAGS) $(BUILD_FLAGS_CXX)
 
