@@ -297,14 +297,6 @@ else ifeq ($(TARGET_OS),3ds)
     CC := $(DEVKITARM)/bin/arm-none-eabi-gcc
     CXX := $(DEVKITARM)/bin/arm-none-eabi-g++
 
-    PICASSO := $(DEVKITARM)/bin/picasso
-    SMDHTOOL := $(DEVKITARM)/bin/smdhtool
-    _3DSXTOOL := $(DEVKITARM)/bin/3dsxtool
-    _3DSLINK := $(DEVKITARM)/bin/3dslink
-    MAKEROM := makerom
-    BANNERTOOL := bannertool
-    CITRA := citra
-
     SERVEFILES := python $(BUILDTOOLS_DIR)/3ds/servefiles.py
 
     ifeq ($(LIBRARY),1)
@@ -411,11 +403,11 @@ else
 
 run: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@$(CITRA) $(RUN_FLAGS) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
+	@citra $(RUN_FLAGS) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
 
 runhw: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@$(_3DSLINK) --address $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
+	@3dslink --address $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/$(STRIPPED_NAME).3dsx
 
 install: $(OUTPUT_ZIP_FILE)
 	@echo "Installing..."
@@ -430,7 +422,7 @@ $(TARGET_BUILD_DIR)/%.shbin.o: $(TARGET_BUILD_DIR)/%.shbin.c
 
 define shader-as
 	$(eval CURBIN := $(patsubst %.shbin.c,%.shbin,$@))
-	$(PICASSO) -o $(CURBIN) $1
+	@picasso -o $(CURBIN) $1
 	@cd $(dir $(CURBIN)); \
 	xxd -i $(notdir $(CURBIN)) "$(CURDIR)/$@"
 	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
@@ -451,27 +443,27 @@ $(TARGET_BUILD_DIR)/%.shbin.c: %.shlist
 
 %.bnr: $(BANNER_IMAGE) $(BANNER_AUDIO)
 	@echo $@
-	@$(BANNERTOOL) makebanner $(BANNER_IMAGE_ARG) $(BANNER_IMAGE) $(BANNER_AUDIO_ARG) $(BANNER_AUDIO) -o $@ > /dev/null
+	@bannertool makebanner $(BANNER_IMAGE_ARG) $(BANNER_IMAGE) $(BANNER_AUDIO_ARG) $(BANNER_AUDIO) -o $@ > /dev/null
 
 %.icn: $(ICON)
 	@echo $@
-	@$(BANNERTOOL) makesmdh -s "$(TITLE)" -l "$(TITLE) - $(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) $(ICON_FLAGS) -o $@ > /dev/null
+	@bannertool makesmdh -s "$(TITLE)" -l "$(TITLE) - $(DESCRIPTION)" -p "$(AUTHOR)" -i $(ICON) $(ICON_FLAGS) -o $@ > /dev/null
 
 %.smdh: $(ICON)
 	@echo $@
-	@$(SMDHTOOL) --create "$(TITLE)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
+	@smdhtool --create "$(TITLE)" "$(DESCRIPTION)" "$(AUTHOR)" $(ICON) $@
 
 $(TARGET_OUTPUT_DIR)/3ds/$(STRIPPED_NAME)/%.3dsx: $(TARGET_OUTPUT_DIR)/%.elf $(TARGET_BUILD_DIR)/meta.smdh
 	@echo $@
-	@$(_3DSXTOOL) $< $@ --smdh=$(word 2,$^) $(_3DSXTOOL_FLAGS)
+	@3dsxtool $< $@ --smdh=$(word 2,$^) $(_3DSXTOOL_FLAGS)
 
 %.3ds: %.elf $(TARGET_BUILD_DIR)/banner.bnr $(TARGET_BUILD_DIR)/icon.icn
 	@echo $@
-	@$(MAKEROM) -f cci -o $@ -elf $< -DAPP_ENCRYPTED=true $(COMMON_MAKEROM_FLAGS)
+	@makerom -f cci -o $@ -elf $< -DAPP_ENCRYPTED=true $(COMMON_MAKEROM_FLAGS)
 
 %.cia: %.elf $(TARGET_BUILD_DIR)/banner.bnr $(TARGET_BUILD_DIR)/icon.icn
 	@echo $@
-	@$(MAKEROM) -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_FLAGS)
+	@makerom -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_FLAGS)
 
 else ifeq ($(TARGET_OS),wiiu)
 
