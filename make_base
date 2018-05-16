@@ -122,24 +122,6 @@ ifeq ($(TARGET),$(filter $(TARGET),3DS WIIU SWITCH))
     endif
 endif
 
-ifeq ($(TARGET),3DS)
-    ifeq ("$(wildcard $(DEVKITARM))","")
-        $(error "Please set a valid DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
-    endif
-endif
-
-ifeq ($(TARGET),WIIU)
-    ifeq ("$(wildcard $(DEVKITPPC))","")
-        $(error "Please set a valid DEVKITPPC in your environment. export DEVKITPPC=<path to>devkitPPC")
-    endif
-endif
-
-ifeq ($(TARGET),SWITCH)
-    ifeq ("$(wildcard $(DEVKITA64))","")
-        $(error "Please set a valid DEVKITA64 in your environment. export DEVKITA64=<path to>devkitA64")
-    endif
-endif
-
 # TOOLS #
 
 BUILDTOOLS_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
@@ -388,6 +370,8 @@ else ifeq ($(TARGET_OS),3ds)
 
     OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
 
+    DEVKITARM := $(DEVKITPRO)/devkitARM
+
     AR := $(DEVKITARM)/bin/arm-none-eabi-ar
     AS := $(DEVKITARM)/bin/arm-none-eabi-as
     CC := $(DEVKITARM)/bin/arm-none-eabi-gcc
@@ -438,6 +422,8 @@ else ifeq ($(TARGET_OS),3ds)
         BANNER_AUDIO_ARG := -a
     endif
 else ifeq ($(TARGET_OS),wiiu)
+    DEVKITPPC := $(DEVKITPRO)/devkitPPC
+
     AR := $(DEVKITPPC)/bin/powerpc-eabi-ar
     AS := $(DEVKITPPC)/bin/powerpc-eabi-as
     CC := $(DEVKITPPC)/bin/powerpc-eabi-gcc
@@ -452,6 +438,8 @@ else ifeq ($(TARGET_OS),wiiu)
     LD_FLAGS += -Wl,-d,--gc-sections
     COMMON_CC_FLAGS += -mwup -mcpu=750 -meabi -mhard-float -ffast-math -DESPRESSO -DWIIU
 else ifeq ($(TARGET_OS),switch)
+    DEVKITA64 := $(DEVKITPRO)/devkitA64
+
     AR := $(DEVKITA64)/bin/aarch64-none-elf-ar
     AS := $(DEVKITA64)/bin/aarch64-none-elf-as
     CC := $(DEVKITA64)/bin/aarch64-none-elf-gcc
