@@ -448,7 +448,7 @@ else ifeq ($(TARGET_OS),switch)
     ifeq ($(LIBRARY),1)
         OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/lib/$(STRIPPED_NAME).a
     else
-        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).elf $(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME).nro
+        OUTPUT_FILES := $(TARGET_OUTPUT_DIR)/$(STRIPPED_NAME).elf $(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME)/$(STRIPPED_NAME).nro
     endif
 
     LD_FLAGS += -specs=$(DEVKITPRO)/libnx/switch.specs
@@ -624,11 +624,11 @@ else
 
 run: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@yuzu-cmd $(RUN_FLAGS) $(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME).nro
+	@yuzu-cmd $(RUN_FLAGS) $(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME)/$(STRIPPED_NAME).nro
 
 runhw: $(OUTPUT_ZIP_FILE)
 	@echo "Running..."
-	@nxlink --address $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME).nro
+	@nxlink --address $(REMOTE_IP) $(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME)/$(STRIPPED_NAME).nro
 
 endif
 
@@ -636,7 +636,7 @@ endif
 	@echo $@
 	@nacptool --create "$(TITLE)" "$(AUTHOR)" "$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)" $@ $(NACP_FLAGS)
 
-$(TARGET_OUTPUT_DIR)/switch/%.nro: $(TARGET_OUTPUT_DIR)/%.elf $(TARGET_BUILD_DIR)/meta.nacp
+$(TARGET_OUTPUT_DIR)/switch/$(STRIPPED_NAME)/%.nro: $(TARGET_OUTPUT_DIR)/%.elf $(TARGET_BUILD_DIR)/meta.nacp
 	@echo $@
 	@elf2nro $< $@ --nacp=$(word 2,$^) $(NRO_FLAGS)
 
